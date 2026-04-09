@@ -18,7 +18,7 @@
 
             <div class="stat-card">
                 <span class="stat-label">Happiest nation</span>
-                <span class="stat-value" >$Nation</span>
+                <span id="happiestCountryId" class="stat-value" >$Nation</span>
                 <span class="stat-sub">Score 7.769</span>
             </div>
 
@@ -44,6 +44,11 @@
                    style="padding: 10px; width: 300px; border-radius: 5px; border: 1px solid #ccc;">
         </div>
         <canvas id="happinessChart"></canvas>
+        
+         <div style="width: 400px; height: 400px; margin: 10px">
+             <h2 style="margin-top: 50px;">Top 15 Happiest Countries</h2>
+             <canvas id="barChart"></canvas>
+         </div>
     </div>
     <script th:src="@{/js/dashboard.js}"></script>
 </body>

@@ -1,6 +1,8 @@
 let scatterChart;
+let barChart;
 let allDataPoints = [];
 let countryCount;
+let happiestCountry;
 
 async function loadChart(year = "2019"){
     const response = await fetch("/api/happiness-data?year=" + year);
@@ -58,6 +60,9 @@ async function loadChart(year = "2019"){
         });
     }
 
+    // Load bar chart with top 15 countries
+    loadBarChart();
+
     document.getElementById('yearSelect').addEventListener('change', e => {
         loadChart(e.target.value);
     })
@@ -74,6 +79,69 @@ function filterData(event){
 
     scatterChart.data.datasets[0].data = filteredData;
     scatterChart.update();
+}
+
+function loadBarChart(){
+    // Sort by happiness score and get top 15
+    const top15 = allDataPoints
+        .sort((a, b) => b.y - a.y)
+        .slice(0, 15);
+
+    const labels = top15.map(item => item.label);
+    const scores = top15.map(item => item.y);
+
+    happiestCountry = top15[0].label;
+
+    if(barChart){
+        barChart.data.labels = labels;
+        barChart.data.datasets[0].data = scores;
+        barChart.update();
+    } else{
+        const ctx = document.getElementById('barChart').getContext('2d');
+        barChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Happiness Score',
+                    data: scores,
+                    backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Happiness Score', color: '#fff' },
+                        grid: { color: '#555' },
+                        ticks: { color: '#fff' },
+                        max: 8,
+                        min: 6
+                    },
+                    y: {
+                        grid: { color: '#555' },
+                        ticks: { color: '#fff' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    },
+                    tooltip: {
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        backgroundColor: '#333'
+                    }
+                }
+            }
+        });
+    }
+
+    document.getElementById('happiestCountryId').innerText = happiestCountry;
 }
 
 loadChart();
