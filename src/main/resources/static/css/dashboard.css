@@ -1,0 +1,59 @@
+body {
+    background-color: #1a1a1a;
+    color: #fff;
+}
+
+h2 {
+    color: #fff;
+}
+
+select, input {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: space-around;
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.stat-label {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.stat-sub {
+    color: #808080;
+    font-size: 0.8rem;
+}
+
+/* .statsText {
+    font-size: 16px;
+    color: #333;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.statsValue {
+    font-weight: bold; 
+    font-size: 18px;
+} */
