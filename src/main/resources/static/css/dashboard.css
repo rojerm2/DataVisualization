@@ -46,14 +46,29 @@ select, input {
     font-size: 0.8rem;
 }
 
-/* .statsText {
-    font-size: 16px;
-    color: #333;
-    margin-top: 3px;
-    margin-bottom: 3px;
+.top-bottom-country-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-family: Arial, sans-serif;
 }
 
-.statsValue {
-    font-weight: bold; 
-    font-size: 18px;
-} */
+.top-bottom-country-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 360px;
+    min-width: 240px;
+    margin: 0 auto;
+}
+
+.top-bottom-country-card h2 {
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    text-align: center;
+}

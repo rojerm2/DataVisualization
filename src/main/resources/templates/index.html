@@ -34,6 +34,7 @@
                 <span class="stat-sub">$low -> $high</span>
             </div>
         </div>
+
         <select id="yearSelect" style="padding: 10px; border-radius: 5px;">
             <option value="2019">2019 Data</option>
             <option value="2018">2018 Data</option>
@@ -44,11 +45,19 @@
                    style="padding: 10px; width: 300px; border-radius: 5px; border: 1px solid #ccc;">
         </div>
         <canvas id="happinessChart"></canvas>
+
+        <div class="top-bottom-country-container">
+            <div class="top-bottom-country-card" style="width: 300px; height: 400px; margin: 10px">
+                <h2 style="margin-top: 50px;">Top 15 Happiest Countries</h2>
+                <canvas id="barChart"></canvas>
+            </div>
+    
+            <div class="top-bottom-country-card" style="width: 300px; height: 400px; margin: 10px">
+                <h2 style="margin-top: 50px;">Bottom 15 Countries</h2>
+                <canvas id="bottomBarChart"></canvas>
+            </div>
+        </div>
         
-         <div style="width: 400px; height: 400px; margin: 10px">
-             <h2 style="margin-top: 50px;">Top 15 Happiest Countries</h2>
-             <canvas id="barChart"></canvas>
-         </div>
     </div>
     <script th:src="@{/js/dashboard.js}"></script>
 </body>
