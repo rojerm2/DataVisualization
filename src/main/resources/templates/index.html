@@ -1,64 +1,751 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Happiness Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link th:href="@{/css/dashboard.css}" rel="stylesheet">
-</head>
-<body style="background-color: #1a1a1a;">
-    <div style="width: 800px; margin: 50px auto;">
-        <h2>Correlation: GDP vs. Happiness Score</h2>
-        <div class="stats-container">
-            <div class="stat-card">
-                <span class="stat-label">Countries ranked</span>
-                <span id="countryCountId" class="stat-value" >$count</span>
-                <span class="stat-sub">$year edition</span>
-            </div>
+    <title>Sleep Health Dashboard</title>
+    <style>
+        /* Dark Mode Design System */
+        :root {
+            --color-background-primary: #1a1a1a;
+            --color-background-secondary: #2d2d2d;
+            --color-text-primary: #e4e4e7;
+            --color-text-secondary: #a1a1a8;
+            --color-text-tertiary: #71717a;
+            --color-border-tertiary: #3f3f46;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+            --font-sans: 'Inter', -apple-system, sans-serif;
+        }
 
-            <div class="stat-card">
-                <span class="stat-label">Happiest nation</span>
-                <span id="happiestCountryId" class="stat-value" >$Nation</span>
-                <span class="stat-sub">Score 7.769</span>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Global avg score</span>
-                <span class="stat-value" >$average</span>
-                <span class="stat-sub">out of 10</span>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Score range</span>
-                <span class="stat-value" >$range</span>
-                <span class="stat-sub">$low -> $high</span>
-            </div>
-        </div>
-
-        <select id="yearSelect" style="padding: 10px; border-radius: 5px;">
-            <option value="2019">2019 Data</option>
-            <option value="2018">2018 Data</option>
-        </select>
-
-        <div style="text-align: end;">
-            <input type="text" id="countrySearch" placeholder="Search for a country..."
-                   style="padding: 10px; width: 300px; border-radius: 5px; border: 1px solid #ccc;">
-        </div>
-        <canvas id="happinessChart"></canvas>
-
-        <div class="top-bottom-country-container">
-            <div class="top-bottom-country-card" style="width: 300px; height: 400px; margin: 10px">
-                <h2 style="margin-top: 50px;">Top 15 Happiest Countries</h2>
-                <canvas id="barChart"></canvas>
-            </div>
-    
-            <div class="top-bottom-country-card" style="width: 300px; height: 400px; margin: 10px">
-                <h2 style="margin-top: 50px;">Bottom 15 Countries</h2>
-                <canvas id="bottomBarChart"></canvas>
-            </div>
-        </div>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-sans); background-color: var(--color-background-primary); padding: 20px; color: var(--color-text-primary); }
+        .dash { max-width: 100%; margin: 0 auto; }
         
+        .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin: 2rem 0 1rem; }
+        
+        /* Metric Cards */
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 1.5rem; }
+        .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1.25rem; border: 1px solid var(--color-border-tertiary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .metric-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+        .metric-value { font-size: 24px; font-weight: 600; color: #4e73df; }
+        .metric-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+        /* Chart Cards */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .chart-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .chart-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .chart-card { background: var(--color-background-secondary); border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.5rem; }
+        .chart-card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--color-text-primary); }
+        .chart-card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+        
+        .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; font-size: 11px; color: var(--color-text-secondary); }
+        .leg-item { display: flex; align-items: center; gap: 6px; }
+        .leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+        .chart-full { margin-bottom: 20px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        
+        /* Heatmap Styling */
+        .heatmap-container { width: 100%; height: 400px; }
+        .heatmap-cell { display: inline-block; width: 40px; height: 40px; margin: 2px; border-radius: 4px; }
+        .heatmap-legend { margin-top: 10px; font-size: 11px; color: var(--color-text-secondary); }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Header -->
+<nav style="background: #333; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+    <a href="/" style="color: white; margin-right: 20px; text-decoration: none; font-weight: 500;">Sleep Health Dashboard</a>
+    <a href="/dashboard" style="color: white; margin-right: 20px; text-decoration: none;">Happiness Visualization</a>
+    <a href="/sleep-data" style="color: white; text-decoration: none;">Sleep Data Table</a>
+</nav>
+
+<h2 class="sr-only">Sleep Health Dashboard Data</h2>
+
+<div class="dash">
+    <!-- Header Metrics -->
+    <div class="metric-grid">
+        <div class="metric">
+            <div class="metric-label">Total participants</div>
+            <div id="stat-total" class="metric-value">...</div>
+            <div class="metric-sub">unique records</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Avg. sleep duration</div>
+            <div id="stat-avg-sleep" class="metric-value">...</div>
+            <div class="metric-sub">hours per night</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Avg. sleep quality</div>
+            <div id="stat-avg-quality" class="metric-value">...</div>
+            <div class="metric-sub">out of 10</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Disorder Prevalence</div>
+            <div id="stat-disorder" class="metric-value">...</div>
+            <div class="metric-sub">Insomnia/Apnea</div>
+        </div>
     </div>
-    <script th:src="@{/js/dashboard.js}"></script>
+
+    <p class="section-title">Sleep Overview</p>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-card-title">Sleep Duration Distribution</div>
+            <div style="height: 220px;"><canvas id="c1"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Sleep Quality Distribution</div>
+            <div style="height: 220px;"><canvas id="c2"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Disorders & Demographics</p>
+    <div class="chart-grid-3">
+        <div class="chart-card">
+            <div class="chart-card-title">Sleep Disorder Breakdown</div>
+            <div style="height: 200px;"><canvas id="c3"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Gender Split</div>
+            <div style="height: 200px;"><canvas id="c4"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">BMI Category</div>
+            <div style="height: 200px;"><canvas id="c5"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Occupation Analysis</p>
+    <div class="chart-full">
+        <div class="chart-card">
+            <div class="chart-card-title">Average Sleep Duration by Occupation</div>
+            <div style="height: 300px;"><canvas id="c6"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Health & Lifestyle Metrics</p>
+    <div class="chart-grid-3">
+        <div class="chart-card">
+            <div class="chart-card-title">Heart Rate Distribution</div>
+            <div style="height: 220px;"><canvas id="c7"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Age Distribution</div>
+            <div style="height: 220px;"><canvas id="c8"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Physical Activity Level</div>
+            <div style="height: 220px;"><canvas id="c9"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Stress & Activity Analysis</p>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-card-title">Stress Level Distribution</div>
+            <div style="height: 250px;"><canvas id="c10"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Daily Steps Distribution</div>
+            <div style="height: 250px;"><canvas id="c11"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Correlations & Relationships</p>
+    <div class="chart-grid-2">
+        <div class="chart-card">
+            <div class="chart-card-title">Stress Level vs Sleep Duration</div>
+            <div style="height: 300px;"><canvas id="c12"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Physical Activity vs Sleep Quality</div>
+            <div style="height: 300px;"><canvas id="c13"></canvas></div>
+        </div>
+    </div>
+
+    <p class="section-title">Sleep Quality Heatmap</p>
+    <div class="chart-full">
+        <div class="chart-card">
+            <div class="chart-card-title">Sleep Quality by Stress Level & Physical Activity</div>
+            <div class="heatmap-container" id="heatmap"></div>
+            <div class="heatmap-legend">
+                <strong>Heatmap Legend:</strong> Cell values represent average sleep quality (out of 10). Darker colors indicate lower quality, brighter colors indicate higher quality.
+            </div>
+        </div>
+    </div>
+
+    <p class="section-title">Advanced Correlations</p>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-card-title">Sleep Disorders by Age Group</div>
+            <div style="height: 300px;"><canvas id="c14"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title">Average Heart Rate by Disorder Type</div>
+            <div style="height: 300px;"><canvas id="c15"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+    // Configuration & Colors
+    const BLUE = '#4e73df', ORANGE = '#f6c23e', GREEN = '#1cc88a', RED = '#e74a3b', PINK = '#d4537e';
+
+    async function initDashboard() {
+        try {
+            // 1. Fetch from your Spring Boot API
+            const response = await fetch('/api/sleep-data-all');
+            const apiData = await response.json();
+
+            // 2. Map API data to the format used by the charts
+            const rows = apiData.map(item => ({
+                gender: item.gender,
+                age: item.age,
+                occupation: item.occupation,
+                sleepDur: item.sleepDuration,
+                sleepQual: item.sleepQuality,
+                activity: item.physicalActivity,
+                stress: item.stressLevel,
+                bmi: item.bmiCategory,
+                heartRate: item.heartRate,
+                steps: item.dailySteps,
+                disorder: item.sleepDisorder || 'None'
+            }));
+
+            renderMetrics(rows);
+            renderCharts(rows);
+
+        } catch (err) {
+            console.error("Dashboard failed to load:", err);
+        }
+    }
+
+    function avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+    function groupBy(arr, key) {
+        return arr.reduce((m, r) => { (m[r[key]] = m[r[key]]||[]).push(r); return m; }, {});
+    }
+
+    function renderMetrics(rows) {
+        document.getElementById('stat-total').innerText = rows.length;
+        document.getElementById('stat-avg-sleep').innerText = avg(rows.map(r => r.sleepDur)).toFixed(1) + 'h';
+        document.getElementById('stat-avg-quality').innerText = avg(rows.map(r => r.sleepQual)).toFixed(1) + ' / 10';
+        const hasDisorder = rows.filter(r => r.disorder !== 'None').length;
+        document.getElementById('stat-disorder').innerText = ((hasDisorder / rows.length) * 100).toFixed(1) + '%';
+    }
+
+    function renderCharts(rows) {
+        // C1: Sleep Duration Histogram
+        const bins = {};
+        rows.forEach(r => { const b = Math.floor(r.sleepDur); bins[b] = (bins[b]||0) + 1; });
+        const binKeys = Object.keys(bins).sort((a,b)=>+a-+b);
+
+        new Chart(document.getElementById('c1'), {
+            type: 'bar',
+            data: { labels: binKeys.map(k=>k+'h'), datasets: [{ label: 'Count', data: binKeys.map(k=>bins[k]), backgroundColor: BLUE, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C2: Sleep Quality Histogram
+        const qualBins = {};
+        rows.forEach(r => { const b = Math.floor(r.sleepQual); qualBins[b] = (qualBins[b]||0) + 1; });
+        const qualBinKeys = Object.keys(qualBins).sort((a,b)=>+a-+b);
+
+        new Chart(document.getElementById('c2'), {
+            type: 'bar',
+            data: { labels: qualBinKeys.map(k=>k+'/10'), datasets: [{ label: 'Count', data: qualBinKeys.map(k=>qualBins[k]), backgroundColor: ORANGE, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C3: Disorder Doughnut
+        const disCounts = groupBy(rows, 'disorder');
+        new Chart(document.getElementById('c3'), {
+            type: 'doughnut',
+            data: { 
+                labels: Object.keys(disCounts), 
+                datasets: [{ 
+                    data: Object.keys(disCounts).map(k => disCounts[k].length), 
+                    backgroundColor: [BLUE, ORANGE, GREEN, RED, PINK] 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C4: Gender Pie
+        const genCounts = groupBy(rows, 'gender');
+        new Chart(document.getElementById('c4'), {
+            type: 'pie',
+            data: { 
+                labels: ['Male', 'Female'], 
+                datasets: [{ data: [genCounts.Male?.length||0, genCounts.Female?.length||0], backgroundColor: [BLUE, PINK] }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C5: BMI Category
+        const bmiCounts = groupBy(rows, 'bmi');
+        new Chart(document.getElementById('c5'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(bmiCounts),
+                datasets: [{
+                    data: Object.keys(bmiCounts).map(k => bmiCounts[k].length),
+                    backgroundColor: [BLUE, ORANGE, GREEN, RED, PINK]
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C6: Occupation Bar (Horizontal)
+        const byOcc = groupBy(rows, 'occupation');
+        const occLabels = Object.keys(byOcc).sort();
+        new Chart(document.getElementById('c6'), {
+            type: 'bar',
+            data: { 
+                labels: occLabels, 
+                datasets: [{ 
+                    label: 'Avg Hours', 
+                    data: occLabels.map(o => avg(byOcc[o].map(r=>r.sleepDur)).toFixed(2)), 
+                    backgroundColor: BLUE, 
+                    borderRadius: 4 
+                }] 
+            },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, y: { ticks: { color: '#a1a1a8' } } }, plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C7: Heart Rate Distribution
+        const hrBins = {};
+        rows.forEach(r => { const b = Math.floor(r.heartRate / 10) * 10; hrBins[b] = (hrBins[b]||0) + 1; });
+        const hrKeys = Object.keys(hrBins).sort((a,b)=>+a-+b);
+        
+        new Chart(document.getElementById('c7'), {
+            type: 'bar',
+            data: { labels: hrKeys.map(k=>k+'-'+(parseInt(k)+9)), datasets: [{ label: 'Count', data: hrKeys.map(k=>hrBins[k]), backgroundColor: RED, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C8: Age Distribution
+        const ageBins = {};
+        rows.forEach(r => { const b = Math.floor(r.age / 5) * 5; ageBins[b] = (ageBins[b]||0) + 1; });
+        const ageKeys = Object.keys(ageBins).sort((a,b)=>+a-+b);
+        
+        new Chart(document.getElementById('c8'), {
+            type: 'bar',
+            data: { labels: ageKeys.map(k=>k+'-'+(parseInt(k)+4)), datasets: [{ label: 'Count', data: ageKeys.map(k=>ageBins[k]), backgroundColor: GREEN, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C9: Physical Activity Level (binned)
+        const actCounts = {};
+        rows.forEach(r => {
+            const value = r.activity;
+            const bucket = value <= 40 ? 'Low (≤40)' : value <= 65 ? 'Medium (41-65)' : 'High (≥66)';
+            actCounts[bucket] = (actCounts[bucket] || 0) + 1;
+        });
+        const actLabels = ['Low (≤40)', 'Medium (41-65)', 'High (≥66)'];
+        new Chart(document.getElementById('c9'), {
+            type: 'bar',
+            data: {
+                labels: actLabels,
+                datasets: [{ label: 'Count', data: actLabels.map(label => actCounts[label] || 0), backgroundColor: PINK, borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C10: Stress Level Distribution
+        const stressBins = {};
+        rows.forEach(r => { stressBins[r.stress] = (stressBins[r.stress]||0) + 1; });
+        const stressKeys = Object.keys(stressBins).sort((a,b)=>+a-+b);
+        
+        new Chart(document.getElementById('c10'), {
+            type: 'bar',
+            data: { labels: stressKeys.map(k=>k+'/10'), datasets: [{ label: 'Count', data: stressKeys.map(k=>stressBins[k]), backgroundColor: ORANGE, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C11: Daily Steps Distribution
+        const stepsBins = {};
+        rows.forEach(r => { const b = Math.floor(r.steps / 2000) * 2000; stepsBins[b] = (stepsBins[b]||0) + 1; });
+        const stepsKeys = Object.keys(stepsBins).sort((a,b)=>+a-+b);
+        
+        new Chart(document.getElementById('c11'), {
+            type: 'bar',
+            data: { labels: stepsKeys.map(k=>(parseInt(k)/1000)+'k-'+(parseInt(k)+1999)), datasets: [{ label: 'Count', data: stepsKeys.map(k=>stepsBins[k]), backgroundColor: GREEN, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } } }
+        });
+
+        // C12: Stress vs Sleep Duration Scatter
+        new Chart(document.getElementById('c12'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Stress vs Sleep Duration',
+                    data: rows.map(r => ({x: r.stress, y: r.sleepDur})),
+                    backgroundColor: BLUE,
+                    borderColor: BLUE,
+                    showLine: false,
+                    fill: false
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Stress Level (1-10)', color: '#a1a1a8' }, ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, y: { title: { display: true, text: 'Sleep Duration (hours)', color: '#a1a1a8' }, ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } } }, plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C13: Activity vs Sleep Quality Scatter
+        new Chart(document.getElementById('c13'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Activity vs Sleep Quality',
+                    data: rows.map(r => ({x: r.activity, y: r.sleepQual, label: `${r.activity} activity`})),
+                    backgroundColor: GREEN,
+                    borderColor: GREEN,
+                    showLine: false,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Physical Activity Level', color: '#a1a1a8' },
+                        ticks: { color: '#a1a1a8' },
+                        grid: { color: '#3f3f46' },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    },
+                    y: {
+                        title: { display: true, text: 'Sleep Quality (1-10)', color: '#a1a1a8' },
+                        ticks: { color: '#a1a1a8' },
+                        grid: { color: '#3f3f46' },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#a1a1a8' } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return 'Activity: ' + ctx.raw.x.toFixed(0) + ', Score: ' + ctx.raw.y.toFixed(1);
+                            }
+                        },
+                        titleColor: '#a1a1a8',
+                        bodyColor: '#fff',
+                        backgroundColor: '#333'
+                    }
+                }
+            }
+        });
+
+        // Heatmap: Sleep Quality by Stress Level & Activity Level
+        renderHeatmap(rows);
+
+        // C14: Sleep Disorders by Age Group
+        const ageGroups = { '20-30': [], '31-40': [], '41-50': [], '50+': [] };
+        rows.forEach(r => {
+            if(r.age <= 30) ageGroups['20-30'].push(r);
+            else if(r.age <= 40) ageGroups['31-40'].push(r);
+            else if(r.age <= 50) ageGroups['41-50'].push(r);
+            else ageGroups['50+'].push(r);
+        });
+
+        const ageGroupDisorders = {};
+        Object.keys(ageGroups).forEach(group => {
+            ageGroupDisorders[group] = groupBy(ageGroups[group], 'disorder');
+        });
+
+        const disorderTypes = new Set();
+        rows.forEach(r => disorderTypes.add(r.disorder));
+        const disorderArray = Array.from(disorderTypes);
+        const colors = [BLUE, ORANGE, GREEN, RED, PINK];
+
+        new Chart(document.getElementById('c14'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(ageGroups),
+                datasets: disorderArray.map((disorder, idx) => ({
+                    label: disorder,
+                    data: Object.keys(ageGroups).map(group => ageGroupDisorders[group][disorder]?.length || 0),
+                    backgroundColor: colors[idx % colors.length]
+                }))
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { stacked: false, ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { stacked: false, ticks: { color: '#a1a1a8' } } }, plugins: { legend: { labels: { color: '#a1a1a8' } } } }
+        });
+
+        // C15: Average Heart Rate by Disorder Type
+        const disorderHR = groupBy(rows, 'disorder');
+        const disorderLabels = Object.keys(disorderHR);
+        const avgHRByDisorder = disorderLabels.map(d => avg(disorderHR[d].map(r => r.heartRate)));
+
+        new Chart(document.getElementById('c15'), {
+            type: 'bar',
+            data: {
+                labels: disorderLabels,
+                datasets: [{
+                    label: 'Avg Heart Rate (bpm)',
+                    data: avgHRByDisorder,
+                    backgroundColor: [BLUE, ORANGE, GREEN, RED, PINK],
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1a8' } } }, scales: { y: { ticks: { color: '#a1a1a8' }, grid: { color: '#3f3f46' } }, x: { ticks: { color: '#a1a1a8' } } } }
+        });
+    }
+
+    function renderHeatmap(rows) {
+        // Create a heatmap of Sleep Quality by Stress Level & Activity Level
+        const heatmapContainer = document.getElementById('heatmap');
+        heatmapContainer.innerHTML = '';
+
+        console.log('Total rows:', rows.length);
+        console.log('Sample stress/activity:', rows.slice(0, 3).map(r => ({s: r.stress, a: r.activity, q: r.sleepQual})));
+
+        // Validate that we have numeric activity and stress data
+        const validRows = rows.filter(r => {
+            const isValid = typeof r.stress === 'number' && typeof r.activity === 'number' && typeof r.sleepQual === 'number';
+            return isValid && !isNaN(r.stress) && !isNaN(r.activity) && !isNaN(r.sleepQual);
+        });
+        
+        console.log('Valid rows:', validRows.length);
+        
+        if(validRows.length === 0) {
+            heatmapContainer.innerHTML = '<p style="color: #a1a1a8;">No valid data available for heatmap</p>';
+            return;
+        }
+
+        // Create stress level bins (1-10 scale)
+        const stressLabels = ['Low (1-3)', 'Medium (4-6)', 'High (7-10)'];
+
+        // Determine activity ranges from actual dataset values
+        const activityValues = validRows.map(r => r.activity);
+        const minActivity = Math.min(...activityValues);
+        const maxActivity = Math.max(...activityValues);
+        const activityBreak1 = minActivity + (maxActivity - minActivity) / 3;
+        const activityBreak2 = minActivity + 2 * (maxActivity - minActivity) / 3;
+        const activityLabels = [
+            `Low (≤${Math.round(activityBreak1)})`,
+            `${Math.round(activityBreak1 + 1)}-${Math.round(activityBreak2)}`,
+            `High (≥${Math.round(activityBreak2 + 1)})`
+        ];
+
+        function categorizeStress(val) {
+            if(val <= 3) return 'Low (1-3)';
+            if(val <= 6) return 'Medium (4-6)';
+            return 'High (7-10)';
+        }
+
+        function categorizeActivity(val) {
+            if(val <= activityBreak1) return activityLabels[0];
+            if(val <= activityBreak2) return activityLabels[1];
+            return activityLabels[2];
+        }
+
+        // Create heatmap data structure: stress -> activity -> [qualities]
+        const heatmapData = {};
+
+        stressLabels.forEach(s => {
+            heatmapData[s] = {};
+            activityLabels.forEach(a => {
+                heatmapData[s][a] = [];
+            });
+        });
+
+        // Bin the data
+        validRows.forEach(r => {
+            const stressCat = categorizeStress(r.stress);
+            const activityCat = categorizeActivity(r.activity);
+            if(heatmapData[stressCat] && heatmapData[stressCat][activityCat]) {
+                heatmapData[stressCat][activityCat].push(r.sleepQual);
+            }
+        });
+
+        console.log('Heatmap data:', heatmapData);
+
+        // Calculate averages and find min/max for color scaling
+        let minQual = 10, maxQual = 0;
+        let dataCount = 0;
+
+        stressLabels.forEach(s => {
+            activityLabels.forEach(a => {
+                if(heatmapData[s][a] && heatmapData[s][a].length > 0) {
+                    const avg_qual = avg(heatmapData[s][a]);
+                    minQual = Math.min(minQual, avg_qual);
+                    maxQual = Math.max(maxQual, avg_qual);
+                    dataCount++;
+                }
+            });
+        });
+
+        console.log('Data bins with values:', dataCount, 'Min quality:', minQual, 'Max quality:', maxQual);
+
+        // Helper function to get color
+        function getColor(value) {
+            if(isNaN(value)) return '#3f3f46';
+            const range = maxQual - minQual;
+            if(range === 0) return '#1cc88a'; // all values are the same
+            const normalized = (value - minQual) / range;
+            const hue = normalized * 120; // 0=red, 120=green
+            return `hsl(${hue}, 100%, 45%)`;
+        }
+
+        // Create heatmap container with proper layout
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.overflowX = 'auto';
+        wrapper.style.maxWidth = '100%';
+
+        // Create title
+        const titleDiv = document.createElement('div');
+        titleDiv.style.marginBottom = '10px';
+        titleDiv.style.color = '#a1a1a8';
+        titleDiv.style.fontSize = '12px';
+        titleDiv.innerHTML = '<strong>Stress Level (↓) vs Physical Activity Level (→)</strong>';
+        wrapper.appendChild(titleDiv);
+
+        // Create heatmap grid
+        const gridContainer = document.createElement('div');
+        gridContainer.style.overflowX = 'auto';
+        gridContainer.style.paddingBottom = '10px';
+
+        const grid = document.createElement('div');
+        grid.style.display = 'inline-block';
+        grid.style.padding = '10px 0';
+
+        // Create header row with activity levels
+        const headerRow = document.createElement('div');
+        headerRow.style.display = 'flex';
+        headerRow.style.marginBottom = '10px';
+        headerRow.style.alignItems = 'center';
+        headerRow.style.gap = '8px';
+
+        // Corner cell
+        const cornerCell = document.createElement('div');
+        cornerCell.style.width = '90px';
+        cornerCell.style.height = '30px';
+        cornerCell.style.flexShrink = 0;
+        headerRow.appendChild(cornerCell);
+
+        // Activity level headers
+        activityLabels.forEach(a => {
+            const headerCell = document.createElement('div');
+            headerCell.style.width = '80px';
+            headerCell.style.height = '30px';
+            headerCell.style.textAlign = 'center';
+            headerCell.style.fontSize = '11px';
+            headerCell.style.color = '#a1a1a8';
+            headerCell.style.flexShrink = 0;
+            headerCell.style.lineHeight = '30px';
+            headerCell.style.fontWeight = 'bold';
+            headerCell.textContent = a;
+            headerRow.appendChild(headerCell);
+        });
+        grid.appendChild(headerRow);
+
+        // Create rows
+        stressLabels.forEach(s => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.marginBottom = '8px';
+            row.style.alignItems = 'center';
+            row.style.gap = '8px';
+
+            // Stress level label
+            const labelCell = document.createElement('div');
+            labelCell.style.width = '90px';
+            labelCell.style.height = '50px';
+            labelCell.style.textAlign = 'right';
+            labelCell.style.fontSize = '11px';
+            labelCell.style.color = '#a1a1a8';
+            labelCell.style.paddingRight = '10px';
+            labelCell.style.flexShrink = 0;
+            labelCell.style.lineHeight = '1.2';
+            labelCell.style.fontWeight = 'bold';
+            labelCell.innerHTML = s;
+            row.appendChild(labelCell);
+
+            // Data cells
+            activityLabels.forEach(a => {
+                const cell = document.createElement('div');
+                cell.style.width = '80px';
+                cell.style.height = '50px';
+                cell.style.borderRadius = '4px';
+                cell.style.cursor = 'pointer';
+                cell.style.border = '1px solid #4a4a5a';
+                cell.style.textAlign = 'center';
+                cell.style.lineHeight = '50px';
+                cell.style.fontSize = '13px';
+                cell.style.color = '#ffffff';
+                cell.style.fontWeight = 'bold';
+                cell.style.flexShrink = 0;
+                cell.style.userSelect = 'none';
+                cell.style.transition = 'transform 0.1s';
+
+                if(heatmapData[s][a] && heatmapData[s][a].length > 0) {
+                    const qual = avg(heatmapData[s][a]);
+                    cell.style.backgroundColor = getColor(qual);
+                    cell.textContent = qual.toFixed(1);
+                    cell.title = `${s} Stress × ${a} Activity\nAvg Sleep Quality: ${qual.toFixed(2)}/10\nRecords: ${heatmapData[s][a].length}`;
+                    
+                    // Add hover effect
+                    cell.addEventListener('mouseover', () => {
+                        cell.style.transform = 'scale(1.1)';
+                        cell.style.boxShadow = '0 0 10px rgba(255,255,255,0.2)';
+                    });
+                    cell.addEventListener('mouseout', () => {
+                        cell.style.transform = 'scale(1)';
+                        cell.style.boxShadow = 'none';
+                    });
+                } else {
+                    cell.style.backgroundColor = '#2a2a3a';
+                    cell.style.opacity = '0.2';
+                    cell.textContent = '—';
+                    cell.title = `${s} Stress × ${a} Activity\nNo data`;
+                }
+
+                row.appendChild(cell);
+            });
+
+            grid.appendChild(row);
+        });
+
+        gridContainer.appendChild(grid);
+        wrapper.appendChild(gridContainer);
+
+        // Add legend
+        const legendDiv = document.createElement('div');
+        legendDiv.style.marginTop = '20px';
+        legendDiv.style.fontSize = '12px';
+        legendDiv.style.color = '#a1a1a8';
+        legendDiv.style.borderTop = '1px solid #3f3f46';
+        legendDiv.style.paddingTop = '15px';
+        
+        const legendContent = document.createElement('div');
+        legendContent.innerHTML = `
+            <div style="margin-bottom: 12px;"><strong style="font-size: 13px;">Color Legend:</strong></div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <div style="width: 40px; height: 25px; background: hsl(0, 100%, 45%); border: 1px solid #4a4a5a; border-radius: 2px;"></div>
+                <span>Poor Sleep Quality (${minQual.toFixed(1)}/10)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <div style="width: 40px; height: 25px; background: hsl(60, 100%, 45%); border: 1px solid #4a4a5a; border-radius: 2px;"></div>
+                <span>Fair Sleep Quality (${((minQual + maxQual) / 2).toFixed(1)}/10)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 40px; height: 25px; background: hsl(120, 100%, 45%); border: 1px solid #4a4a5a; border-radius: 2px;"></div>
+                <span>Good Sleep Quality (${maxQual.toFixed(1)}/10)</span>
+            </div>
+            <div style="font-size: 11px; color: #71717a; line-height: 1.5;">
+                <strong>Note:</strong> Cell values show average sleep quality. Hover to see details. Categories are binned: Low (1-3), Medium (4-6), High (7-10).
+            </div>
+        `;
+        legendDiv.appendChild(legendContent);
+        wrapper.appendChild(legendDiv);
+
+        heatmapContainer.appendChild(wrapper);
+    }
+
+    initDashboard();
+</script>
 </body>
 </html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Happiness Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link th:href="@{/css/dashboard.css}" rel="stylesheet">
+    <style>
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .page-title {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .controls select,
+        .controls input {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            font-size: 14px;
+        }
+        .controls input::placeholder {
+            color: #999;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3f3f46;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .chart-card {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3f3f46;
+        }
+        .chart-card h3 {
+            color: #fff;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .chart-full {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3f3f46;
+            margin-bottom: 25px;
+        }
+        .chart-full h3 {
+            color: #fff;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body style="background-color: #1a1a1a;">
+<nav style="background: #333; padding: 15px; margin-bottom: 20px;">
+    <a href="/" style="color: white; margin-right: 20px; text-decoration: none; font-weight: 500;">Sleep Health Dashboard</a>
+    <a href="/dashboard" style="color: white; margin-right: 20px; text-decoration: none;">Happiness Visualization</a>
+    <a href="/sleep-data" style="color: white; text-decoration: none;">Sleep Data Table</a>
+</nav>
+
+<div class="dashboard-container">
+    <h1 class="page-title">🌍 World Happiness Dashboard</h1>
+    
+    <div class="controls">
+        <select id="yearSelect" style="padding: 10px; border-radius: 5px;">
+            <option value="2019">2019 Data</option>
+            <option value="2018">2018 Data</option>
+        </select>
+        <input type="text" id="countrySearch" placeholder="Search for a country..."
+               style="padding: 10px; width: 300px; border-radius: 5px;">
+    </div>
+
+    <!-- Key Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">Countries ranked</span>
+            <span id="countryCountId" class="stat-value">—</span>
+            <span class="stat-sub">total entries</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Happiest nation</span>
+            <span id="happiestCountryId" class="stat-value">—</span>
+            <span class="stat-sub">highest score</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Global avg score</span>
+            <span id="avgScoreId" class="stat-value">—</span>
+            <span class="stat-sub">out of 10</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Score range</span>
+            <span id="rangeId" class="stat-value">—</span>
+            <span class="stat-sub">min to max</span>
+        </div>
+    </div>
+
+    <!-- Main Correlation Chart -->
+    <div class="chart-full">
+        <h3>GDP vs Happiness Correlation</h3>
+        <div style="height: 350px;">
+            <canvas id="happinessChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Grid 1 -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>Happiness Score Distribution</h3>
+            <div style="height: 300px;">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>GDP per Capita Distribution</h3>
+            <div style="height: 300px;">
+                <canvas id="gdpDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid 2 -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>Top 15 Happiest Countries</h3>
+            <div style="height: 350px;">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Bottom 15 Countries by Score</h3>
+            <div style="height: 350px;">
+                <canvas id="bottomBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid 3 -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>Score Quartile Analysis</h3>
+            <div style="height: 300px;">
+                <canvas id="quartileChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Top 10 Countries - Comparison</h3>
+            <div style="height: 300px;">
+                <canvas id="top10RadarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Width Chart -->
+    <div class="chart-full">
+        <h3>All Countries Ranked by Happiness Score</h3>
+        <div style="height: 400px;">
+            <canvas id="allCountriesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+    <script th:src="@{/js/dashboard.js}"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Sleep Health Analysis</title>
+    <style>
+        body { font-family: sans-serif; background-color: #1a1a1a; padding: 20px; color: #e4e4e7; }
+        /* Added overflow-x to handle the wide table */
+        .table-container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            overflow-x: auto;
+            border: 1px solid #3f3f46;
+        }
+        h2 { color: #e4e4e7; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 1000px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #3f3f46; font-size: 0.9rem; color: #e4e4e7; }
+        th { background-color: #4e73df; color: white; white-space: nowrap; font-weight: 600; }
+        tr:hover { background-color: #3f3f46; }
+        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+        .badge-none { background: #4a4a5a; color: #a1a1a8; }
+        .badge-disorder { background: #5a3030; color: #ff7070; }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Header -->
+<nav style="background: #333; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+    <a href="/" style="color: white; margin-right: 20px; text-decoration: none; font-weight: 500;">Sleep Health Dashboard</a>
+    <a href="/dashboard" style="color: white; margin-right: 20px; text-decoration: none;">Happiness Visualization</a>
+    <a href="/sleep-data" style="color: white; text-decoration: none;">Sleep Data Table</a>
+</nav>
+
+<div class="table-container">
+    <h2>Sleep Health & Lifestyle Dataset</h2>
+    <table id="sleepTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Gender</th>
+            <th>Age</th>
+            <th>Occupation</th>
+            <th>Sleep Duration</th>
+            <th>Quality</th>
+            <th>Activity Level</th>
+            <th>Stress Level</th>
+            <th>BMI Category</th>
+            <th>Blood Pressure</th>
+            <th>Heart Rate</th>
+            <th>Daily Steps</th>
+            <th>Sleep Disorder</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Data will be injected here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    async function loadSleepData() {
+        try {
+            const response = await fetch('/api/sleep-data-all');
+            const data = await response.json();
+            const tableBody = document.querySelector('#sleepTable tbody');
+
+            tableBody.innerHTML = data.map(row => `
+                    <tr>
+                        <td>${row.personId}</td>
+                        <td>${row.gender}</td>
+                        <td>${row.age}</td>
+                        <td>${row.occupation}</td>
+                        <td>${row.sleepDuration} hrs</td>
+                        <td>${row.sleepQuality}/10</td>
+                        <td>${row.physicalActivityLevel}</td>
+                        <td>${row.stressLevel}/10</td>
+                        <td>${row.bmiCategory}</td>
+                        <td>${row.bloodPressure}</td>
+                        <td>${row.heartRate} bpm</td>
+                        <td>${row.dailySteps}</td>
+                        <td>
+                            <span class="badge ${row.sleepDisorder ? 'badge-disorder' : 'badge-none'}">
+                                ${row.sleepDisorder || 'None'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+        } catch (error) {
+            console.error("Error fetching sleep data:", error);
+        }
+    }
+
+    loadSleepData();
+</script>
+</body>
+</html>
