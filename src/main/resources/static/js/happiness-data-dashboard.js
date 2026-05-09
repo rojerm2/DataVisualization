@@ -39,14 +39,23 @@ function updateStatistics(){
 }
 
 async function loadChart(year = "2019"){
-    const response = await fetch("/api/happiness-data?year=" + year);
-    const rawData = await response.json();
+    try {
+        const response = await fetch("/api/happiness-data?year=" + year);
+        if (!response.ok) {
+            console.error('Failed to fetch happiness data:', response.status);
+            return;
+        }
+        const rawData = await response.json();
 
-    allDataPoints = rawData.map(item => ({
-        x: item.gdp,
-        y: item.score,
-        label: item.country
-    }));
+        allDataPoints = rawData.map(item => ({
+            x: item.gdp,
+            y: item.score,
+            label: item.country
+        }));
+    } catch (error) {
+        console.error('Error loading chart data:', error);
+        return;
+    }
 
     countryCount = allDataPoints.length;
     document.getElementById('countryCountId').innerText = countryCount;
@@ -469,5 +478,3 @@ document.getElementById('countrySearch').addEventListener('input', filterData);
 
 // Load initial data
 loadChart('2019');
-
-loadChart();

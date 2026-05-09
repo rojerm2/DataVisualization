@@ -13,7 +13,7 @@ public class PageController {
 
     @GetMapping("/dashboard")
     public String dashboard() {
-        return "happiness-index";
+        return "happiness-data-dashboard";
     }
 
     @GetMapping("/sleep-data")

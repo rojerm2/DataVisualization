@@ -18,9 +18,77 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #3f3f46; font-size: 0.9rem; color: #e4e4e7; }
         th { background-color: #4e73df; color: white; white-space: nowrap; font-weight: 600; }
         tr:hover { background-color: #3f3f46; }
-        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+                .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
         .badge-none { background: #4a4a5a; color: #a1a1a8; }
         .badge-disorder { background: #5a3030; color: #ff7070; }
+        th.sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        th.sortable .sort-arrow {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-left: 6px;
+            vertical-align: middle;
+            border: solid #e4e4e7;
+            border-width: 0 1px 1px 0;
+            transform: rotate(45deg);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            opacity: 0.4;
+        }
+        th.sortable.sort-asc .sort-arrow {
+            transform: rotate(-135deg);
+            opacity: 1;
+        }
+        th.sortable.sort-desc .sort-arrow {
+            transform: rotate(45deg);
+            opacity: 1;
+        }
+        .pagination {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            gap: 10px;
+            color: #e4e4e7;
+            font-size: 0.9rem;
+        }
+        .pagination .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            background: #4e73df;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .pagination button:disabled {
+            background: #3f4b72;
+            cursor: not-allowed;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #3b5ace;
+        }
+        .page-size {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .page-size select {
+            background: #1a1a1a;
+            color: #e4e4e7;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
     </style>
 </head>
 <body>
@@ -37,58 +105,184 @@
     <table id="sleepTable">
         <thead>
         <tr>
-            <th>ID</th>
-            <th>Gender</th>
-            <th>Age</th>
-            <th>Occupation</th>
-            <th>Sleep Duration</th>
-            <th>Quality</th>
-            <th>Activity Level</th>
-            <th>Stress Level</th>
-            <th>BMI Category</th>
-            <th>Blood Pressure</th>
-            <th>Heart Rate</th>
-            <th>Daily Steps</th>
-            <th>Sleep Disorder</th>
+            <th class="sortable" data-key="personId">ID <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="gender">Gender <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="age">Age <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="occupation">Occupation <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="sleepDuration">Sleep Duration <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="sleepQuality">Quality <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="physicalActivity">Activity Level <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="stressLevel">Stress Level <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="bmiCategory">BMI Category <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="bloodPressure">Blood Pressure <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="heartRate">Heart Rate <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="dailySteps">Daily Steps <span class="sort-arrow"></span></th>
+            <th class="sortable" data-key="sleepDisorder">Sleep Disorder <span class="sort-arrow"></span></th>
         </tr>
         </thead>
         <tbody>
         <!-- Data will be injected here -->
         </tbody>
     </table>
+    <div class="pagination">
+        <div class="page-size">
+            <label for="pageSize">Rows per page:</label>
+            <select id="pageSize">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <div class="controls">
+            <button id="prevPage" disabled>Previous</button>
+            <button id="nextPage" disabled>Next</button>
+        </div>
+        <div id="paginationSummary">Page 1 of 1</div>
+    </div>
 </div>
 
 <script>
+    let sleepData = [];
+    let currentPage = 1;
+    let pageSize = 10;
+    let sortColumn = null;
+    let sortDirection = 'asc';
+
     async function loadSleepData() {
         try {
             const response = await fetch('/api/sleep-data-all');
-            const data = await response.json();
-            const tableBody = document.querySelector('#sleepTable tbody');
-
-            tableBody.innerHTML = data.map(row => `
-                    <tr>
-                        <td>${row.personId}</td>
-                        <td>${row.gender}</td>
-                        <td>${row.age}</td>
-                        <td>${row.occupation}</td>
-                        <td>${row.sleepDuration} hrs</td>
-                        <td>${row.sleepQuality}/10</td>
-                        <td>${row.physicalActivityLevel}</td>
-                        <td>${row.stressLevel}/10</td>
-                        <td>${row.bmiCategory}</td>
-                        <td>${row.bloodPressure}</td>
-                        <td>${row.heartRate} bpm</td>
-                        <td>${row.dailySteps}</td>
-                        <td>
-                            <span class="badge ${row.sleepDisorder ? 'badge-disorder' : 'badge-none'}">
-                                ${row.sleepDisorder || 'None'}
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
+            sleepData = await response.json();
+            currentPage = 1;
+            renderPage();
+            setupPagination();
+            setupSort();
         } catch (error) {
             console.error("Error fetching sleep data:", error);
         }
+    }
+
+    function renderPage() {
+        const tableBody = document.querySelector('#sleepTable tbody');
+        const start = (currentPage - 1) * pageSize;
+        const pageRows = getSortedData().slice(start, start + pageSize);
+
+        tableBody.innerHTML = pageRows.map(row => `
+                <tr>
+                    <td>${row.personId}</td>
+                    <td>${row.gender}</td>
+                    <td>${row.age}</td>
+                    <td>${row.occupation}</td>
+                    <td>${row.sleepDuration} hrs</td>
+                    <td>${row.sleepQuality}/10</td>
+                    <td>${row.physicalActivity}</td>
+                    <td>${row.stressLevel}/10</td>
+                    <td>${row.bmiCategory}</td>
+                    <td>${row.bloodPressure}</td>
+                    <td>${row.heartRate} bpm</td>
+                    <td>${row.dailySteps}</td>
+                    <td>
+                        <span class="badge ${row.sleepDisorder ? 'badge-disorder' : 'badge-none'}">
+                            ${row.sleepDisorder || 'None'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+        updatePagination();
+    }
+
+    function setupPagination() {
+        const prevButton = document.getElementById('prevPage');
+        const nextButton = document.getElementById('nextPage');
+        const pageSizeSelect = document.getElementById('pageSize');
+
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage -= 1;
+                renderPage();
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentPage < getPageCount()) {
+                currentPage += 1;
+                renderPage();
+            }
+        });
+
+        pageSizeSelect.addEventListener('change', (event) => {
+            pageSize = Number(event.target.value);
+            currentPage = 1;
+            renderPage();
+        });
+
+        updatePagination();
+    }
+
+    function getSortedData() {
+        if (!sortColumn) {
+            return sleepData;
+        }
+
+        return [...sleepData].sort((a, b) => {
+            let aValue = a[sortColumn];
+            let bValue = b[sortColumn];
+            const numericFields = ['personId', 'age', 'sleepDuration', 'sleepQuality', 'physicalActivity', 'stressLevel', 'heartRate', 'dailySteps'];
+
+            if (numericFields.includes(sortColumn)) {
+                aValue = parseFloat(aValue) || 0;
+                bValue = parseFloat(bValue) || 0;
+            } else {
+                aValue = aValue ? String(aValue).toLowerCase() : '';
+                bValue = bValue ? String(bValue).toLowerCase() : '';
+            }
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    function setupSort() {
+        const headers = document.querySelectorAll('th.sortable');
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const key = header.dataset.key;
+                if (sortColumn === key) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = key;
+                    sortDirection = 'asc';
+                }
+                currentPage = 1;
+                updateSortHeaders();
+                renderPage();
+            });
+        });
+        updateSortHeaders();
+    }
+
+    function updateSortHeaders() {
+        document.querySelectorAll('th.sortable').forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+            if (header.dataset.key === sortColumn) {
+                header.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+        });
+    }
+
+    function getPageCount() {
+        return Math.max(1, Math.ceil(sleepData.length / pageSize));
+    }
+
+    function updatePagination() {
+        const prevButton = document.getElementById('prevPage');
+        const nextButton = document.getElementById('nextPage');
+        const paginationSummary = document.getElementById('paginationSummary');
+
+        prevButton.disabled = currentPage === 1;
+        nextButton.disabled = currentPage === getPageCount();
+        paginationSummary.textContent = `Page ${currentPage} of ${getPageCount()} (${sleepData.length} records)`;
     }
 
     loadSleepData();
