@@ -714,11 +714,12 @@ function renderHeatmap(rows) {
 
   const heatmapColor = (value) => {
     const v = Math.max(-1, Math.min(1, value));
-    const normalized = (v + 1) / 2;
-    const red = Math.round(255 * normalized);
-    const blue = Math.round(255 * (1 - normalized));
-    const green = Math.round(255 * (1 - Math.abs(v)));
-    return `rgb(${red}, ${green}, ${blue})`;
+    if (v >= 0) {
+      const t = 1 - v;
+      return `rgb(255, ${Math.round(255 * t)}, ${Math.round(255 * t)})`;
+    }
+    const t = 1 - Math.abs(v);
+    return `rgb(${Math.round(255 * t)}, ${Math.round(255 * t)}, 255)`;
   };
 
   if (window.heatmapChart) {
@@ -733,7 +734,7 @@ function renderHeatmap(rows) {
           label: "Correlation",
           data: matrixData,
           backgroundColor: (ctx) => heatmapColor(ctx.dataset.data[ctx.dataIndex].v),
-          borderColor: "#3f3f46",
+          borderColor: "#2d2d2d",
           borderWidth: 1,
           width: (ctx) => {
             const area = ctx.chart.chartArea;
@@ -746,11 +747,20 @@ function renderHeatmap(rows) {
         },
       ],
     },
+    plugins: [ChartDataLabels],
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
+        datalabels: {
+          color: (ctx) =>
+            Math.abs(ctx.dataset.data[ctx.dataIndex].v) > 0.55 ? "#ffffff" : "#111111",
+          formatter: (ctx) => ctx.dataset.data[ctx.dataIndex].v.toFixed(2),
+          anchor: "center",
+          align: "center",
+          font: { weight: "600", size: 12 },
+        },
         tooltip: {
           callbacks: {
             title: (items) => `${items[0].raw.y} vs ${items[0].raw.x}`,

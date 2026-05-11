@@ -158,11 +158,15 @@
             <canvas id="heatmapCanvas"></canvas>
           </div>
         </div>
+        <div class="heatmap-colorbar">
+          <span>-1</span>
+          <div class="heatmap-gradient"></div>
+          <span>+1</span>
+        </div>
         <div class="heatmap-legend">
-          <strong>Heatmap Legend:</strong> Cell values represent Pearson
-          correlation coefficients between variables. Red indicates positive
-          correlation, blue indicates negative correlation. Values range from
-          -1 (perfect negative) to +1 (perfect positive).
+          <strong>Heatmap Legend:</strong> Values are Pearson correlation
+          coefficients between sleep dataset variables. Red = strong positive,
+          blue = strong negative, white = no correlation.
         </div>
       </div>
     </div>
