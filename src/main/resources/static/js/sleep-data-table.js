@@ -3,18 +3,73 @@ let currentPage = 1;
 let pageSize = 10;
 let sortColumn = null;
 let sortDirection = 'asc';
+let searchQuery = '';
+let isInitialized = false;
 
 async function loadSleepData() {
     try {
         const response = await fetch('/api/sleep-data-all');
         sleepData = await response.json();
         currentPage = 1;
+        searchQuery = '';
+        document.getElementById('searchInput').value = '';
+
+        if (!isInitialized) {
+            setupPagination();
+            setupSort();
+            setupSearch();
+            isInitialized = true;
+        }
+
         renderPage();
-        setupPagination();
-        setupSort();
     } catch (error) {
-        console.error("Error fetching sleep data:", error);
+        console.error('Error fetching sleep data:', error);
     }
+}
+
+function getFilteredData() {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sleepData;
+
+    return sleepData.filter(row =>
+        Object.values(row).some(value =>
+            String(value).toLowerCase().includes(query),
+        ),
+    );
+}
+
+function getSortedData() {
+    const filtered = getFilteredData();
+    if (!sortColumn) {
+        return filtered;
+    }
+
+    return [...filtered].sort((a, b) => {
+        let aValue = a[sortColumn];
+        let bValue = b[sortColumn];
+        const numericFields = [
+            'personId',
+            'age',
+            'sleepDuration',
+            'sleepQuality',
+            'physicalActivity',
+            'stressLevel',
+            'heartRate',
+            'dailySteps',
+        ];
+
+        if (numericFields.includes(sortColumn)) {
+            aValue = parseFloat(aValue) || 0;
+            bValue = parseFloat(bValue) || 0;
+        } else {
+            aValue = aValue ? String(aValue).toLowerCase() : '';
+            bValue = bValue ? String(bValue).toLowerCase() : '';
+        }
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
 }
 
 function renderPage() {
@@ -22,7 +77,8 @@ function renderPage() {
     const start = (currentPage - 1) * pageSize;
     const pageRows = getSortedData().slice(start, start + pageSize);
 
-    tableBody.innerHTML = pageRows.map(row => `
+    tableBody.innerHTML = pageRows
+        .map(row => `
                 <tr>
                     <td>${row.personId}</td>
                     <td>${row.gender}</td>
@@ -42,7 +98,8 @@ function renderPage() {
                         </span>
                     </td>
                 </tr>
-            `).join('');
+            `)
+        .join('');
 
     updatePagination();
 }
@@ -66,36 +123,10 @@ function setupPagination() {
         }
     });
 
-    pageSizeSelect.addEventListener('change', (event) => {
+    pageSizeSelect.addEventListener('change', event => {
         pageSize = Number(event.target.value);
         currentPage = 1;
         renderPage();
-    });
-
-    updatePagination();
-}
-
-function getSortedData() {
-    if (!sortColumn) {
-        return sleepData;
-    }
-
-    return [...sleepData].sort((a, b) => {
-        let aValue = a[sortColumn];
-        let bValue = b[sortColumn];
-        const numericFields = ['personId', 'age', 'sleepDuration', 'sleepQuality', 'physicalActivity', 'stressLevel', 'heartRate', 'dailySteps'];
-
-        if (numericFields.includes(sortColumn)) {
-            aValue = parseFloat(aValue) || 0;
-            bValue = parseFloat(bValue) || 0;
-        } else {
-            aValue = aValue ? String(aValue).toLowerCase() : '';
-            bValue = bValue ? String(bValue).toLowerCase() : '';
-        }
-
-        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
     });
 }
 
@@ -118,6 +149,15 @@ function setupSort() {
     updateSortHeaders();
 }
 
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', event => {
+        searchQuery = event.target.value || '';
+        currentPage = 1;
+        renderPage();
+    });
+}
+
 function updateSortHeaders() {
     document.querySelectorAll('th.sortable').forEach(header => {
         header.classList.remove('sort-asc', 'sort-desc');
@@ -128,17 +168,62 @@ function updateSortHeaders() {
 }
 
 function getPageCount() {
-    return Math.max(1, Math.ceil(sleepData.length / pageSize));
+    return Math.max(1, Math.ceil(getFilteredData().length / pageSize));
 }
 
 function updatePagination() {
     const prevButton = document.getElementById('prevPage');
     const nextButton = document.getElementById('nextPage');
     const paginationSummary = document.getElementById('paginationSummary');
+    const totalRecords = getFilteredData().length;
 
     prevButton.disabled = currentPage === 1;
     nextButton.disabled = currentPage === getPageCount();
-    paginationSummary.textContent = `Page ${currentPage} of ${getPageCount()} (${sleepData.length} records)`;
+    paginationSummary.textContent = `Page ${currentPage} of ${getPageCount()} (${totalRecords} records)`;
 }
 
-loadSleepData();
+function exportTable() {
+    const filtered = getFilteredData();
+    if (!filtered.length) {
+        return;
+    }
+
+    const headers = [
+        'ID',
+        'Gender',
+        'Age',
+        'Occupation',
+        'Sleep Duration',
+        'Quality',
+        'Activity Level',
+        'Stress Level',
+        'BMI Category',
+        'Blood Pressure',
+        'Heart Rate',
+        'Daily Steps',
+        'Sleep Disorder',
+    ];
+
+    const rows = filtered.map(row => [
+        row.personId,
+        row.gender,
+        row.age,
+        row.occupation,
+        `${row.sleepDuration} hrs`,
+        `${row.sleepQuality}/10`,
+        row.physicalActivity,
+        `${row.stressLevel}/10`,
+        row.bmiCategory,
+        row.bloodPressure,
+        `${row.heartRate} bpm`,
+        row.dailySteps,
+        row.sleepDisorder || 'None',
+    ]);
+
+    const csv = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+}
+
+window.addEventListener('DOMContentLoaded', loadSleepData);

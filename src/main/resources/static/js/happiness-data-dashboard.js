@@ -26,21 +26,116 @@ const colors = {
   purpleLight: "rgba(153, 102, 255, 0.8)",
 };
 
+// Linear regression calculation
+function calculateLinearRegression(data) {
+  if (data.length < 2) return null;
+  const n = data.length;
+  const sumX = data.reduce((a, p) => a + p.x, 0);
+  const sumY = data.reduce((a, p) => a + p.y, 0);
+  const sumXY = data.reduce((a, p) => a + (p.x * p.y), 0);
+  const sumXX = data.reduce((a, p) => a + (p.x * p.x), 0);
+  
+  const denominator = n * sumXX - sumX * sumX;
+  if (Math.abs(denominator) < 1e-10) return null;
+  
+  const slope = (n * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
+
+// Generate trendline data points
+function getTrendlineData(data, regression) {
+  if (!regression || data.length === 0) return [];
+  const xValues = data.map(p => p.x).sort((a, b) => a - b);
+  const minX = xValues[0];
+  const maxX = xValues[xValues.length - 1];
+  
+  return [
+    { x: minX, y: regression.slope * minX + regression.intercept },
+    { x: maxX, y: regression.slope * maxX + regression.intercept }
+  ];
+}
+
 function updateStatistics() {
   if (allDataPoints.length === 0) return;
 
   const scores = allDataPoints.map((p) => p.y);
-  const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(
-    2,
-  );
+  const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
   const minScore = Math.min(...scores).toFixed(2);
   const maxScore = Math.max(...scores).toFixed(2);
 
-  document.getElementById("avgScoreId").innerText = avgScore;
-  document.getElementById("rangeId").innerText = `${minScore} - ${maxScore}`;
+  // Update metric values with animation
+  animateValue("avgScoreId", avgScore);
+  animateValue("rangeId", `${minScore} - ${maxScore}`);
+  animateValue("countryCountId", countryCount);
+
+  // Find happiest country
+  const maxScorePoint = allDataPoints.reduce((max, point) =>
+    point.y > max.y ? point : max
+  );
+  animateValue("happiestCountryId", maxScorePoint.label);
+
+  // Animate progress bars
+  setTimeout(() => {
+    document.getElementById("country-progress").style.width = "100%";
+    document.getElementById("happiest-progress").style.width = "100%";
+    document.getElementById("avg-progress").style.width = `${(avgScore / 10) * 100}%`;
+    document.getElementById("range-progress").style.width = "100%";
+  }, 500);
+
+  // Update insights
+  updateInsights(avgScore, maxScorePoint.label);
+}
+
+function animateValue(elementId, targetValue) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const startValue = parseFloat(element.textContent) || 0;
+  const endValue = parseFloat(targetValue) || targetValue;
+  const duration = 1000;
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    if (typeof endValue === 'number') {
+      const currentValue = startValue + (endValue - startValue) * progress;
+      element.textContent = isNaN(currentValue) ? targetValue : currentValue.toFixed(2);
+    } else {
+      if (progress >= 1) {
+        element.textContent = targetValue;
+      }
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
+function updateInsights(avgScore, happiestCountry) {
+  document.getElementById("global-insight").textContent =
+    `GDP per capita shows strong positive correlation with happiness scores. Global average: ${avgScore}/10.`;
+  document.getElementById("coverage-insight").textContent =
+    `Comprehensive analysis of ${countryCount} countries worldwide.`;
+  document.getElementById("top-insight").textContent =
+    `${happiestCountry} leads with the highest happiness score in the dataset.`;
+}
+
+function showLoading() {
+  document.getElementById("loading-overlay").style.display = "flex";
+}
+
+function hideLoading() {
+  document.getElementById("loading-overlay").style.display = "none";
 }
 
 async function loadChart(year = "2019") {
+  // showLoading();
   try {
     const response = await fetch("/api/happiness-data?year=" + year);
     if (!response.ok) {
@@ -57,6 +152,8 @@ async function loadChart(year = "2019") {
   } catch (error) {
     console.error("Error loading chart data:", error);
     return;
+  } finally {
+    hideLoading();
   }
 
   countryCount = allDataPoints.length;
@@ -64,8 +161,12 @@ async function loadChart(year = "2019") {
   updateStatistics();
 
   // Main scatter chart
+  const regression = calculateLinearRegression(allDataPoints);
+  const trendlineData = getTrendlineData(allDataPoints, regression);
+  
   if (scatterChart) {
     scatterChart.data.datasets[0].data = allDataPoints;
+    scatterChart.data.datasets[1].data = trendlineData;
     scatterChart.update();
   } else {
     const ctx = document.getElementById("happinessChart").getContext("2d");
@@ -78,6 +179,18 @@ async function loadChart(year = "2019") {
             data: allDataPoints,
             backgroundColor: colors.teal,
             borderColor: colors.teal,
+          },
+          {
+            label: "Trend Line",
+            type: "line",
+            data: trendlineData,
+            borderColor: colors.red,
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0,
+            tension: 0,
           },
         ],
       },
@@ -542,6 +655,7 @@ function loadBottomBarChart() {
 loadChart("2019");
 
 function onLoad() {
+  loadChart(); // Load initial data
   document.getElementById("countrySearch").addEventListener("input", filterData);
   document.getElementById("yearSelect").addEventListener("change", (e) => {
     loadChart(e.target.value);

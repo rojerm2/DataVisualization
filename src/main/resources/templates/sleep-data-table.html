@@ -1,60 +1,101 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Sleep Health Analysis</title>
-
+    <title>Sleep Health Table</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link th:href="@{/css/sleep-data-table.css}" rel="stylesheet">
     <script th:src="@{/js/sleep-data-table.js}"></script>
 </head>
 <body>
 
-<!-- Navigation Header -->
-<nav style="background: #333; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-    <a href="/" style="color: white; margin-right: 20px; text-decoration: none; font-weight: 500;">Sleep Health Dashboard</a>
-    <a href="/dashboard" style="color: white; margin-right: 20px; text-decoration: none;">Happiness Visualization</a>
-    <a href="/sleep-data" style="color: white; text-decoration: none;">Sleep Data Table</a>
+<header class="dashboard-header">
+    <div class="header-content">
+        <div>
+            <h1 class="dashboard-title"><i class="fas fa-bed"></i> Sleep Data Table</h1>
+            <p class="dashboard-subtitle">Browse the full sleep health dataset with sorting, paging, and search controls.</p>
+        </div>
+        <div class="header-actions">
+            <button class="action-btn" type="button" onclick="loadSleepData()" title="Refresh data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<nav class="nav-bar">
+    <div class="nav-container">
+        <a href="/" class="nav-link"><i class="fas fa-chart-line"></i> Sleep Health Dashboard</a>
+        <a href="/dashboard" class="nav-link"><i class="fas fa-smile"></i> Happiness Visualization</a>
+        <a href="/sleep-data" class="nav-link active"><i class="fas fa-table"></i> Sleep Data Table</a>
+    </div>
 </nav>
 
-<div class="table-container">
-    <h2>Sleep Health & Lifestyle Dataset</h2>
-    <table id="sleepTable">
-        <thead>
-        <tr>
-            <th class="sortable" data-key="personId">ID <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="gender">Gender <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="age">Age <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="occupation">Occupation <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="sleepDuration">Sleep Duration <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="sleepQuality">Quality <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="physicalActivity">Activity Level <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="stressLevel">Stress Level <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="bmiCategory">BMI Category <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="bloodPressure">Blood Pressure <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="heartRate">Heart Rate <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="dailySteps">Daily Steps <span class="sort-arrow"></span></th>
-            <th class="sortable" data-key="sleepDisorder">Sleep Disorder <span class="sort-arrow"></span></th>
-        </tr>
-        </thead>
-        <tbody>
-        <!-- Data will be injected here -->
-        </tbody>
-    </table>
-    <div class="pagination">
-        <div class="page-size">
-            <label for="pageSize">Rows per page:</label>
-            <select id="pageSize">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-            </select>
+<div class="dash">
+    <div class="table-card">
+        <div class="table-card-header">
+            <div>
+                <p class="section-title">Data Explorer</p>
+                <h2>Sleep Health & Lifestyle Dataset</h2>
+            </div>
+            <div class="search-section">
+                <label for="searchInput" class="search-label">Quick search</label>
+                <input id="searchInput" type="search" placeholder="Search by gender, occupation, disorder, age...">
+            </div>
         </div>
-        <div class="controls">
-            <button id="prevPage" disabled>Previous</button>
-            <button id="nextPage" disabled>Next</button>
+
+        <div class="table-container">
+            <table id="sleepTable" class="styled-table">
+                <thead>
+                <tr>
+                    <th class="sortable" data-key="personId">ID <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="gender">Gender <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="age">Age <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="occupation">Occupation <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="sleepDuration">Sleep Duration <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="sleepQuality">Quality <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="physicalActivity">Activity Level <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="stressLevel">Stress Level <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="bmiCategory">BMI Category <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="bloodPressure">Blood Pressure <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="heartRate">Heart Rate <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="dailySteps">Daily Steps <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-key="sleepDisorder">Sleep Disorder <span class="sort-arrow"></span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Data will be injected here -->
+                </tbody>
+            </table>
         </div>
-        <div id="paginationSummary">Page 1 of 1</div>
+
+        <div class="pagination">
+            <div class="page-size">
+                <label for="pageSize">Rows per page:</label>
+                <select id="pageSize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="controls">
+                <button id="prevPage" disabled>Previous</button>
+                <button id="nextPage" disabled>Next</button>
+            </div>
+            <div id="paginationSummary">Page 1 of 1</div>
+        </div>
     </div>
 </div>
+
+<footer class="dashboard-footer">
+    <div class="footer-content">
+        <p>&copy; Sleep Health Analytics Dashboard. Powered by Spring Boot & Chart.js</p>
+        <div class="footer-links">
+            <a href="/">Overview</a>
+            <a href="/dashboard">Happiness</a>
+            <a href="/sleep-data">Sleep Data</a>
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

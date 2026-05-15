@@ -4,6 +4,7 @@
 <head>
   <title>Sleep Health Dashboard</title>
   <link th:href="@{/css/index.css}" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script
@@ -13,47 +14,149 @@
 </head>
 
 <body>
+  <!-- Professional Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="dashboard-title">
+          <i class="fas fa-moon"></i>
+          Sleep Health Analytics Dashboard
+        </h1>
+        <p class="dashboard-subtitle">Comprehensive sleep health insights and correlations</p>
+      </div>
+      <div class="header-right">
+        <div class="header-info">
+          <div class="date-time">
+            <i class="fas fa-calendar-alt"></i>
+            <span id="current-date"></span>
+          </div>
+          <div class="last-updated">
+            <i class="fas fa-clock"></i>
+            <span id="last-updated">Loading...</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <!-- <button class="action-btn" onclick="exportDashboard()" title="Export Dashboard">
+            <i class="fas fa-download"></i>
+          </button> -->
+          <button class="action-btn" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fas fa-sun"></i>
+          </button>
+          <button class="action-btn" onclick="refreshData()" title="Refresh Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
   <!-- Navigation Header -->
-  <nav style="
-        background: #333;
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 4px;
-      ">
-    <a href="/" style="
-          color: white;
-          margin-right: 20px;
-          text-decoration: none;
-          font-weight: 500;
-        ">Sleep Health Dashboard</a>
-    <a href="/dashboard" style="color: white; margin-right: 20px; text-decoration: none">Happiness Visualization</a>
-    <a href="/sleep-data" style="color: white; text-decoration: none">Sleep Data Table</a>
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <a href="/" class="nav-link active">
+        <i class="fas fa-chart-line"></i>
+        Sleep Health Dashboard
+      </a>
+      <a href="/dashboard" class="nav-link">
+        <i class="fas fa-smile"></i>
+        Happiness Visualization
+      </a>
+      <a href="/sleep-data" class="nav-link">
+        <i class="fas fa-table"></i>
+        Sleep Data Table
+      </a>
+    </div>
   </nav>
 
   <h2 class="sr-only">Sleep Health Dashboard Data</h2>
 
+  <!-- Key Insights Banner -->
+  <div class="insights-banner">
+    <div class="insight-card">
+      <i class="fas fa-lightbulb insight-icon"></i>
+      <div class="insight-content">
+        <h3>Key Finding</h3>
+        <p id="key-insight">Higher stress levels correlate with reduced sleep duration and quality</p>
+      </div>
+    </div>
+    <div class="insight-card">
+      <i class="fas fa-trending-up insight-icon"></i>
+      <div class="insight-content">
+        <h3>Trend Alert</h3>
+        <p id="trend-insight">Physical activity shows positive correlation with sleep quality</p>
+      </div>
+    </div>
+    <div class="insight-card">
+      <i class="fas fa-exclamation-triangle insight-icon"></i>
+      <div class="insight-content">
+        <h3>Health Concern</h3>
+        <p id="health-insight">Sleep disorders affect approximately <span id="disorder-percentage">0%</span> of participants</p>
+      </div>
+    </div>
+  </div>
+
   <div class="dash">
-    <!-- Header Metrics -->
+    <!-- Enhanced Header Metrics -->
     <div class="metric-grid">
-      <div class="metric">
-        <div class="metric-label">Total participants</div>
-        <div id="stat-total" class="metric-value">...</div>
-        <div class="metric-sub">unique records</div>
+      <div class="metric enhanced">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Total Participants</div>
+            <div id="stat-total" class="metric-value">...</div>
+            <div class="metric-sub">unique records</div>
+          </div>
+        </div>
+        <div class="metric-progress">
+          <div class="progress-bar" id="total-progress"></div>
+        </div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Avg. sleep duration</div>
-        <div id="stat-avg-sleep" class="metric-value">...</div>
-        <div class="metric-sub">hours per night</div>
+      <div class="metric enhanced">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Avg. Sleep Duration</div>
+            <div id="stat-avg-sleep" class="metric-value">...</div>
+            <div class="metric-sub">hours per night</div>
+          </div>
+        </div>
+        <div class="metric-progress">
+          <div class="progress-bar" id="sleep-progress"></div>
+        </div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Avg. sleep quality</div>
-        <div id="stat-avg-quality" class="metric-value">...</div>
-        <div class="metric-sub">out of 10</div>
+      <div class="metric enhanced">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <i class="fas fa-star"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Avg. Sleep Quality</div>
+            <div id="stat-avg-quality" class="metric-value">...</div>
+            <div class="metric-sub">out of 10</div>
+          </div>
+        </div>
+        <div class="metric-progress">
+          <div class="progress-bar" id="quality-progress"></div>
+        </div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Disorder Prevalence</div>
-        <div id="stat-disorder" class="metric-value">...</div>
-        <div class="metric-sub">Insomnia/Apnea</div>
+      <div class="metric enhanced">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <div class="metric-content">
+            <div class="metric-label">Disorder Prevalence</div>
+            <div id="stat-disorder" class="metric-value">...</div>
+            <div class="metric-sub">Insomnia/Apnea</div>
+          </div>
+        </div>
+        <div class="metric-progress">
+          <div class="progress-bar" id="disorder-progress"></div>
+        </div>
       </div>
     </div>
 
@@ -95,12 +198,12 @@
       </div>
     </div>
 
-    <p class="section-title">Health & Lifestyle Metrics</p>
+    <!-- <p class="section-title">Health & Lifestyle Metrics</p>
     <div class="chart-grid-3">
-      <!-- <div class="chart-card">
+       <div class="chart-card">
         <div class="chart-card-title">Heart Rate Distribution</div>
         <div style="height: 220px"><canvas id="c7"></canvas></div>
-      </div> -->
+      </div> 
       <div class="chart-card">
         <div class="chart-card-title">Age Distribution</div>
         <div style="height: 220px"><canvas id="c8"></canvas></div>
@@ -109,19 +212,19 @@
         <div class="chart-card-title">Physical Activity Level</div>
         <div style="height: 220px"><canvas id="c9"></canvas></div>
       </div>
-    </div>
+    </div> -->
 
-    <p class="section-title">Stress & Activity Analysis</p>
+    <!-- <p class="section-title">Stress & Activity Analysis</p>
     <div class="chart-grid">
-      <!-- <div class="chart-card">
+      <div class="chart-card">
         <div class="chart-card-title">Stress Level Distribution</div>
         <div style="height: 250px"><canvas id="c10"></canvas></div>
-      </div> -->
+      </div>
       <div class="chart-card">
         <div class="chart-card-title">Daily Steps Distribution</div>
         <div style="height: 250px"><canvas id="c11"></canvas></div>
       </div>
-    </div>
+    </div> -->
 
     <p class="section-title">Correlations & Relationships</p>
     <div class="chart-grid-2">
@@ -134,17 +237,22 @@
         <div style="height: 300px"><canvas id="c13"></canvas></div>
       </div>
     </div>
-    <div class="chart-full">
+    <div class="chart-grid">
       <div class="chart-card">
         <div class="chart-card-title">
           Average Quality per Stress Level (1–10)
         </div>
         <div style="height: 320px"><canvas id="c16"></canvas></div>
       </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Sleep Disorders by Age Group</div>
+        <div style="height: 300px"><canvas id="c14"></canvas></div>
+      </div>
     </div>
 
     <p class="section-title">Sleep Quality Heatmap</p>
-    <div class="chart-full">
+    <!-- <div class="chart-full"> -->
+    <div class="chart-grid" style="margin: auto; width: 700px">
       <div class="chart-card">
         <div class="chart-card-title">
           Sleep Quality by Stress Level & Physical Activity
@@ -171,7 +279,7 @@
       </div>
     </div>
 
-    <p class="section-title">Advanced Correlations</p>
+    <!-- <p class="section-title">Advanced Correlations</p>
     <div class="chart-grid">
       <div class="chart-card">
         <div class="chart-card-title">Sleep Disorders by Age Group</div>
@@ -182,6 +290,40 @@
           Average Heart Rate by Disorder Type
         </div>
         <div style="height: 300px"><canvas id="c15"></canvas></div>
+      </div>
+    </div> -->
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h3>Loading Sleep Health Data...</h3>
+      <p>Analyzing correlations and generating insights</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="dashboard-footer">
+    <div class="footer-content">
+      <p>&copy; Sleep Health Analytics Dashboard. Powered by Spring Boot & Chart.js</p>
+      <div class="footer-links">
+        <a href="#" onclick="showAbout()">About</a>
+        <a href="#" onclick="showHelp()">Help</a>
+        <a href="#" onclick="showContact()">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal for additional info -->
+  <div id="info-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">About</h3>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Content will be populated by JavaScript -->
       </div>
     </div>
   </div>
