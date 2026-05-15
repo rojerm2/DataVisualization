@@ -1,4 +1,4 @@
-// Configuration & Colors
+﻿// Configuration & Colors
 const BLUE = "#4e73df",
   ORANGE = "#f6c23e",
   GREEN = "#1cc88a",
@@ -69,6 +69,7 @@ async function initDashboard() {
       activity: item.physicalActivity,
       stress: item.stressLevel,
       bmi: item.bmiCategory,
+      bloodPressure: item.bloodPressure,
       heartRate: item.heartRate,
       steps: item.dailySteps,
       disorder: item.sleepDisorder || "None",
@@ -103,6 +104,13 @@ function groupBy(arr, key) {
     (m[r[key]] = m[r[key]] || []).push(r);
     return m;
   }, {});
+}
+
+function parseBloodPressure(bp) {
+  if (!bp || typeof bp !== "string") return null;
+  const parts = bp.split("/").map((value) => parseInt(value, 10));
+  if (parts.length !== 2 || parts.some((value) => Number.isNaN(value))) return null;
+  return { systolic: parts[0], diastolic: parts[1] };
 }
 
 function renderMetrics(rows) {
@@ -384,10 +392,10 @@ function renderCharts(rows) {
   // rows.forEach((r) => {
   //   const value = r.activity;
   //   const bucket =
-  //     value <= 40 ? "Low (≤40)" : value <= 65 ? "Medium (41-65)" : "High (≥66)";
+  //     value <= 40 ? "Low (â‰¤40)" : value <= 65 ? "Medium (41-65)" : "High (â‰¥66)";
   //   actCounts[bucket] = (actCounts[bucket] || 0) + 1;
   // });
-  // const actLabels = ["Low (≤40)", "Medium (41-65)", "High (≥66)"];
+  // const actLabels = ["Low (â‰¤40)", "Medium (41-65)", "High (â‰¥66)"];
   // new Chart(document.getElementById("c9"), {
   //   type: "bar",
   //   data: {
@@ -683,9 +691,137 @@ function renderCharts(rows) {
     },
   });
 
+  // C17: Blood Pressure vs Sleep Apnea
+  const apneaRows = rows.filter((r) =>
+    r.disorder && r.disorder.toLowerCase().includes("apnea"),
+  );
+  const nonApneaRows = rows.filter(
+    (r) => !r.disorder || !r.disorder.toLowerCase().includes("apnea"),
+  );
+
+  const apneaBpValues = apneaRows
+    .map((r) => parseBloodPressure(r.bloodPressure))
+    .filter(Boolean);
+  const nonApneaBpValues = nonApneaRows
+    .map((r) => parseBloodPressure(r.bloodPressure))
+    .filter(Boolean);
+
+  const avgApneaSystolic = avg(apneaBpValues.map((bp) => bp.systolic)).toFixed(1);
+  const avgApneaDiastolic = avg(apneaBpValues.map((bp) => bp.diastolic)).toFixed(1);
+  const avgNonApneaSystolic = avg(nonApneaBpValues.map((bp) => bp.systolic)).toFixed(1);
+  const avgNonApneaDiastolic = avg(nonApneaBpValues.map((bp) => bp.diastolic)).toFixed(1);
+
+    const bpGroups = [
+    {
+      label: "Sleep Apnea",
+      color: ORANGE,
+      filter: (r) => r.disorder && r.disorder.toLowerCase().includes("apnea"),
+    },
+    {
+      label: "Insomnia",
+      color: GREEN,
+      filter: (r) => r.disorder && r.disorder.toLowerCase().includes("insomnia"),
+    },
+    {
+      label: "None",
+      color: BLUE,
+      filter: (r) => !r.disorder || r.disorder.toLowerCase() === "none",
+    },
+  ];
+
+  const bpDatasets = bpGroups.flatMap((group) => {
+    const points = rows
+      .filter(group.filter)
+      .map((r) => ({
+        bp: parseBloodPressure(r.bloodPressure),
+        disorder: r.disorder,
+      }))
+      .filter((item) => item.bp)
+      .map((item) => ({
+        x: item.bp.systolic,
+        y: item.bp.diastolic,
+        label: item.disorder,
+      }));
+
+    const regression = calculateLinearRegression(points);
+    const trendline = getTrendlineData(points, regression);
+
+    const scatterDataset = {
+      label: group.label,
+      data: points,
+      backgroundColor: group.color,
+      borderColor: group.color,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      showLine: false,
+    };
+
+    const lineDataset = {
+      label: `${group.label} Trend`,
+      type: "line",
+      data: trendline,
+      borderColor: group.color,
+      backgroundColor: "transparent",
+      borderWidth: 2,
+      borderDash: [6, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0,
+      spanGaps: true,
+      hidden: points.length < 2,
+    };
+
+    return [scatterDataset, lineDataset];
+  });
+
+  new Chart(document.getElementById("c17"), {
+    type: "scatter",
+    data: { datasets: bpDatasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Systolic BP (mmHg)",
+            color: "#a1a1a8",
+          },
+          ticks: { color: "#a1a1a8" },
+          grid: { color: "#3f3f46" },
+          min: 100,
+          max: 160,
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Diastolic BP (mmHg)",
+            color: "#a1a1a8",
+          },
+          ticks: { color: "#a1a1a8" },
+          grid: { color: "#3f3f46" },
+          min: 65,
+          max: 105,
+        },
+      },
+      plugins: {
+        legend: { labels: { color: "#a1a1a8" } },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return `${context.dataset.label}: ${context.parsed.x}/${context.parsed.y} mmHg`;
+            },
+          },
+          titleColor: "#a1a1a8",
+          bodyColor: "#fff",
+          backgroundColor: "#333",
+        },
+      },
+    },
+  });
+
   // Heatmap: Sleep Quality by Stress Level & Activity Level
   renderHeatmap(rows);
-
   // C14: Sleep Disorders by Age Group
   const ageGroups = { "20-30": [], "31-40": [], "41-50": [], "50+": [] };
   rows.forEach((r) => {
@@ -1162,3 +1298,4 @@ document.addEventListener('click', function(event) {
     closeModal();
   }
 });
+
